@@ -45,90 +45,197 @@
             border-radius: 4px;
             display: none;
         }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab.active {
+            background-color: #f8f8f8;
+            border-color: #ddd;
+            border-bottom-color: #f8f8f8;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .food-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .remove-food {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .remove-food:hover {
+            background-color: #cc0000;
+        }
+        .add-food {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .add-food:hover {
+            background-color: #45a049;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>Cat Food Calculator</h1>
     
-    <form id="catFoodForm">
-        <h2>Cat Information</h2>
-        <div class="form-group">
-            <label for="catName">Cat Name:</label>
-            <div style="display: flex; gap: 10px;">
-                <select id="catName" style="flex: 1;" required>
-                    <option value="">Select a cat or enter new name</option>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('calculator')">Calculator</div>
+        <div class="tab" onclick="switchTab('tracker')">Food Tracker</div>
+    </div>
+
+    <div id="calculator" class="tab-content active">
+        <form id="catFoodForm">
+            <h2>Cat Information</h2>
+            <div class="form-group">
+                <label for="catName">Cat Name:</label>
+                <div style="display: flex; gap: 10px;">
+                    <select id="catName" style="flex: 1;" required>
+                        <option value="">Select a cat or enter new name</option>
+                    </select>
+                    <input type="text" id="newCatName" placeholder="New cat name" style="flex: 1;">
+                    <button type="button" onclick="addNewCat()" style="white-space: nowrap;">Add New Cat</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg):</label>
+                <input type="number" id="weight" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="birthDate">Birth Date:</label>
+                <input type="date" id="birthDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Gender:</label>
+                <select id="gender" required>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
                 </select>
-                <input type="text" id="newCatName" placeholder="New cat name" style="flex: 1;">
-                <button type="button" onclick="addNewCat()" style="white-space: nowrap;">Add New Cat</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="neutered">Neutered/Spayed:</label>
+                <select id="neutered" required>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+
+            <h2>Food Information</h2>
+            <div class="form-group">
+                <label>Calorie Input Method:</label>
+                <select id="calorieMethod" onchange="toggleCalorieInput()">
+                    <option value="direct">Direct Calorie Input</option>
+                    <option value="calculate">Calculate from Nutrients</option>
+                </select>
+            </div>
+
+            <div id="directCalories" class="form-group">
+                <label for="calories">Calories per 100g:</label>
+                <input type="number" id="calories" step="0.1">
+            </div>
+
+            <div id="nutrientCalories" class="form-group" style="display: none;">
+                <label for="protein">Protein (%):</label>
+                <input type="number" id="protein" step="0.1">
+                
+                <label for="fat">Fat (%):</label>
+                <input type="number" id="fat" step="0.1">
+                
+                <label for="fiber">Fiber (%):</label>
+                <input type="number" id="fiber" step="0.1">
+                
+                <label for="moisture">Moisture (%):</label>
+                <input type="number" id="moisture" step="0.1">
+                
+                <label for="ash">Ash (%):</label>
+                <input type="number" id="ash" step="0.1">
+            </div>
+
+            <button type="submit">Calculate</button>
+        </form>
+
+        <div id="result" class="result">
+            <h2>Results</h2>
+            <p>Resting Energy Requirement (RER): <span id="rer"></span> kcal/day</p>
+            <p>Maintenance Energy Requirement (MER): <span id="mer"></span> kcal/day</p>
+            <p>Recommended Food Amount: <span id="foodAmount"></span> g/day</p>
+            <p class="calories-display">Calories per 100g: <span id="caloriesPer100g"></span> kcal</p>
+        </div>
+    </div>
+
+    <div id="tracker" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Food Tracker</h2>
+            <button class="reset-food" onclick="resetFoodItems()" style="background-color: #ff4444;">Reset Food Items</button>
+        </div>
+        <div class="form-group">
+            <label for="trackerCatName">Select Cat:</label>
+            <select id="trackerCatName" onchange="updateTracker()">
+                <option value="">Select a cat</option>
+            </select>
+        </div>
+
+        <div id="trackerContent" style="display: none;">
+            <div id="foodItems"></div>
+            <button class="add-food" onclick="addFoodItem()">+ Add Food Item</button>
+            
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text">
+                <span id="caloriesConsumed">0</span> / <span id="dailyCalories">0</span> kcal (<span id="caloriePercentage">0</span>%)
             </div>
         </div>
-
-        <div class="form-group">
-            <label for="weight">Weight (kg):</label>
-            <input type="number" id="weight" step="0.1" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="birthDate">Birth Date:</label>
-            <input type="date" id="birthDate" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="gender">Gender:</label>
-            <select id="gender" required>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="neutered">Neutered/Spayed:</label>
-            <select id="neutered" required>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-        </div>
-
-        <h2>Food Information</h2>
-        <div class="form-group">
-            <label>Calorie Input Method:</label>
-            <select id="calorieMethod" onchange="toggleCalorieInput()">
-                <option value="direct">Direct Calorie Input</option>
-                <option value="calculate">Calculate from Nutrients</option>
-            </select>
-        </div>
-
-        <div id="directCalories" class="form-group">
-            <label for="calories">Calories per 100g:</label>
-            <input type="number" id="calories" step="0.1">
-        </div>
-
-        <div id="nutrientCalories" class="form-group" style="display: none;">
-            <label for="protein">Protein (%):</label>
-            <input type="number" id="protein" step="0.1">
-            
-            <label for="fat">Fat (%):</label>
-            <input type="number" id="fat" step="0.1">
-            
-            <label for="fiber">Fiber (%):</label>
-            <input type="number" id="fiber" step="0.1">
-            
-            <label for="moisture">Moisture (%):</label>
-            <input type="number" id="moisture" step="0.1">
-            
-            <label for="ash">Ash (%):</label>
-            <input type="number" id="ash" step="0.1">
-        </div>
-
-        <button type="submit">Calculate</button>
-    </form>
-
-    <div id="result" class="result">
-        <h2>Results</h2>
-        <p>Resting Energy Requirement (RER): <span id="rer"></span> kcal/day</p>
-        <p>Maintenance Energy Requirement (MER): <span id="mer"></span> kcal/day</p>
-        <p>Recommended Food Amount: <span id="foodAmount"></span> g/day</p>
-        <p class="calories-display">Calories per 100g: <span id="caloriesPer100g"></span> kcal</p>
     </div>
 
     <script>
@@ -302,19 +409,6 @@
             const birthDate = document.getElementById('birthDate').value;
             const gender = document.getElementById('gender').value;
             const neutered = document.getElementById('neutered').value;
-
-            // Save profile
-            saveProfile(catName, {
-                weight,
-                birthDate,
-                gender,
-                neutered
-            });
-
-            // Reload profiles to update the dropdown without clearing fields
-            loadCatProfiles(false);
-            // Select the current cat again
-            document.getElementById('catName').value = catName;
             
             const age = calculateAge(birthDate);
             const isNeutered = neutered === 'yes';
@@ -340,6 +434,19 @@
                 // For intact adult cats
                 mer = rer * 1.4;
             }
+
+            // Save profile without MER
+            saveProfile(catName, {
+                weight,
+                birthDate,
+                gender,
+                neutered
+            });
+
+            // Reload profiles to update the dropdown without clearing fields
+            loadCatProfiles(false);
+            // Select the current cat again
+            document.getElementById('catName').value = catName;
             
             // Get calories per 100g
             let caloriesPer100g;
@@ -371,6 +478,391 @@
             
             resultDiv.style.display = 'block';
         });
+
+        function calculateMER(weight, birthDate, neutered) {
+            const age = calculateAge(birthDate);
+            const isNeutered = neutered === 'yes';
+            
+            // Calculate RER (Resting Energy Requirement)
+            let rer = 70 * Math.pow(parseFloat(weight), 0.75);
+            
+            // Calculate MER (Maintenance Energy Requirement)
+            let mer;
+            if (age < 1/3) { // Under 4 months
+                mer = rer * 3.0;
+            } else if (age < 0.5) { // 4-6 months
+                mer = rer * 2.5;
+            } else if (age < 1 && !isNeutered) { // 6-12 months, not neutered
+                mer = rer * 2.0;
+            } else if (isNeutered) {
+                mer = rer * 1.2;
+            } else {
+                mer = rer * 1.4;
+            }
+            
+            return Math.round(mer);
+        }
+
+        function updateProgress() {
+            const catName = document.getElementById('trackerCatName').value;
+            if (!catName) return;
+            
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            const profile = profiles[catName];
+            if (!profile) return;
+            
+            // Calculate total calories consumed
+            let totalCalories = 0;
+            document.querySelectorAll('.food-item').forEach(item => {
+                const amount = parseFloat(item.querySelector('.food-amount').value) || 0;
+                const calories = parseFloat(item.querySelector('.food-calories').value) || 0;
+                totalCalories += (amount * calories) / 100;
+            });
+            
+            // Calculate MER on the spot
+            const dailyCalories = calculateMER(profile.weight, profile.birthDate, profile.neutered);
+            
+            // Calculate percentage
+            const percentage = dailyCalories > 0 ? (totalCalories / dailyCalories) * 100 : 0;
+            
+            // Update progress bar and text
+            document.getElementById('progressFill').style.width = `${Math.min(percentage, 100)}%`;
+            document.getElementById('caloriesConsumed').textContent = Math.round(totalCalories);
+            document.getElementById('dailyCalories').textContent = dailyCalories;
+            document.getElementById('caloriePercentage').textContent = Math.round(percentage);
+            
+            // Change color based on percentage
+            const progressFill = document.getElementById('progressFill');
+            if (percentage > 100) {
+                progressFill.style.backgroundColor = '#ff4444';
+            } else if (percentage > 80) {
+                progressFill.style.backgroundColor = '#ffbb33';
+            } else {
+                progressFill.style.backgroundColor = '#4CAF50';
+            }
+        }
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate selected tab
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            
+            // Update tracker if switching to tracker tab
+            if (tabName === 'tracker') {
+                updateTrackerCatList();
+            }
+        }
+
+        function updateTrackerCatList() {
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            const select = document.getElementById('trackerCatName');
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add saved profiles as options
+            Object.keys(profiles).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        }
+
+        function updateTracker() {
+            const catName = document.getElementById('trackerCatName').value;
+            const trackerContent = document.getElementById('trackerContent');
+            
+            if (!catName) {
+                trackerContent.style.display = 'none';
+                return;
+            }
+            
+            trackerContent.style.display = 'block';
+            loadFoodItems(catName);
+            updateProgress();
+        }
+
+        function addFoodItem() {
+            const catName = document.getElementById('trackerCatName').value;
+            if (!catName) return;
+            
+            const foodItems = document.getElementById('foodItems');
+            const foodItem = document.createElement('div');
+            foodItem.className = 'food-item';
+            foodItem.innerHTML = `
+                <button class="remove-food" onclick="removeFoodItem(this)">×</button>
+                <div class="form-group">
+                    <label>Food Name:</label>
+                    <input type="text" class="food-name" placeholder="Enter food name">
+                </div>
+                <div class="form-group">
+                    <label>Amount (g):</label>
+                    <input type="number" class="food-amount" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Calorie Input Method:</label>
+                    <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
+                        <option value="direct">Direct Calorie Input</option>
+                        <option value="calculate">Calculate from Nutrients</option>
+                    </select>
+                </div>
+                <div class="food-direct-calories">
+                    <div class="form-group">
+                        <label>Calories per 100g:</label>
+                        <input type="number" class="food-calories" step="0.1" min="0">
+                    </div>
+                </div>
+                <div class="food-nutrient-calories" style="display: none;">
+                    <div class="form-group">
+                        <label>Protein (%):</label>
+                        <input type="number" class="food-protein" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Fat (%):</label>
+                        <input type="number" class="food-fat" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Fiber (%):</label>
+                        <input type="number" class="food-fiber" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Moisture (%):</label>
+                        <input type="number" class="food-moisture" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Ash (%):</label>
+                        <input type="number" class="food-ash" step="0.1" min="0">
+                    </div>
+                </div>
+            `;
+            
+            foodItems.appendChild(foodItem);
+
+            // Add event listeners to the new food item
+            const inputs = foodItem.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    updateFoodItemCalories(foodItem);
+                });
+            });
+
+            // Add event listener to the select
+            const select = foodItem.querySelector('select');
+            select.addEventListener('change', () => {
+                toggleFoodCalorieInput(select);
+            });
+
+            saveFoodItems(catName);
+            updateProgress();
+        }
+
+        function toggleFoodCalorieInput(select) {
+            const foodItem = select.closest('.food-item');
+            const directCalories = foodItem.querySelector('.food-direct-calories');
+            const nutrientCalories = foodItem.querySelector('.food-nutrient-calories');
+            
+            if (select.value === 'direct') {
+                directCalories.style.display = 'block';
+                nutrientCalories.style.display = 'none';
+            } else {
+                directCalories.style.display = 'none';
+                nutrientCalories.style.display = 'block';
+            }
+            
+            // Update calories when switching methods
+            updateFoodItemCalories(foodItem);
+        }
+
+        function updateFoodItemCalories(foodItem) {
+            const method = foodItem.querySelector('.food-calorie-method').value;
+            let calories;
+            
+            if (method === 'direct') {
+                calories = parseFloat(foodItem.querySelector('.food-calories').value) || 0;
+            } else {
+                const protein = parseFloat(foodItem.querySelector('.food-protein').value) || 0;
+                const fat = parseFloat(foodItem.querySelector('.food-fat').value) || 0;
+                const fiber = parseFloat(foodItem.querySelector('.food-fiber').value) || 0;
+                const moisture = parseFloat(foodItem.querySelector('.food-moisture').value) || 0;
+                const ash = parseFloat(foodItem.querySelector('.food-ash').value) || 0;
+                
+                // Calculate carbohydrates by subtracting other components from 100%
+                const carbohydrates = 100 - (protein + fat + fiber + moisture + ash);
+                
+                // Calculate calories using Atwater factors
+                const proteinCalories = (protein / 100) * 3.5 * 100;
+                const fatCalories = (fat / 100) * 8.5 * 100;
+                const carbCalories = (carbohydrates / 100) * 3.5 * 100;
+                
+                calories = proteinCalories + fatCalories + carbCalories;
+            }
+            
+            // Update the hidden calories input
+            foodItem.querySelector('.food-calories').value = calories;
+            
+            // Update progress
+            const catName = document.getElementById('trackerCatName').value;
+            saveFoodItems(catName);
+            updateProgress();
+        }
+
+        function removeFoodItem(button) {
+            button.parentElement.remove();
+            const catName = document.getElementById('trackerCatName').value;
+            saveFoodItems(catName);
+            updateProgress();
+        }
+
+        function saveFoodItems(catName) {
+            if (!catName) return;
+            
+            const foodItems = [];
+            document.querySelectorAll('.food-item').forEach(item => {
+                const method = item.querySelector('.food-calorie-method').value;
+                const foodData = {
+                    name: item.querySelector('.food-name').value,
+                    amount: item.querySelector('.food-amount').value,
+                    calories: item.querySelector('.food-calories').value,
+                    method: method // Save the method to restore the correct view
+                };
+                
+                if (method === 'calculate') {
+                    foodData.protein = item.querySelector('.food-protein').value;
+                    foodData.fat = item.querySelector('.food-fat').value;
+                    foodData.fiber = item.querySelector('.food-fiber').value;
+                    foodData.moisture = item.querySelector('.food-moisture').value;
+                    foodData.ash = item.querySelector('.food-ash').value;
+                }
+                
+                foodItems.push(foodData);
+            });
+            
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            if (profiles[catName]) {
+                profiles[catName].foodItems = foodItems;
+                localStorage.setItem('catProfiles', JSON.stringify(profiles));
+            }
+        }
+
+        function loadFoodItems(catName) {
+            if (!catName) return;
+            
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            const profile = profiles[catName];
+            const foodItems = document.getElementById('foodItems');
+            foodItems.innerHTML = '';
+            
+            if (profile && profile.foodItems) {
+                profile.foodItems.forEach(item => {
+                    const foodItem = document.createElement('div');
+                    foodItem.className = 'food-item';
+                    foodItem.innerHTML = `
+                        <button class="remove-food" onclick="removeFoodItem(this)">×</button>
+                        <div class="form-group">
+                            <label>Food Name:</label>
+                            <input type="text" class="food-name" placeholder="Enter food name" value="${item.name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (g):</label>
+                            <input type="number" class="food-amount" step="0.1" min="0" value="${item.amount || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Calorie Input Method:</label>
+                            <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
+                                <option value="direct" ${item.method === 'calculate' ? '' : 'selected'}>Direct Calorie Input</option>
+                                <option value="calculate" ${item.method === 'calculate' ? 'selected' : ''}>Calculate from Nutrients</option>
+                            </select>
+                        </div>
+                        <div class="food-direct-calories" style="display: ${item.method === 'calculate' ? 'none' : 'block'}">
+                            <div class="form-group">
+                                <label>Calories per 100g:</label>
+                                <input type="number" class="food-calories" step="0.1" min="0" value="${item.calories || ''}">
+                            </div>
+                        </div>
+                        <div class="food-nutrient-calories" style="display: ${item.method === 'calculate' ? 'block' : 'none'}">
+                            <div class="form-group">
+                                <label>Protein (%):</label>
+                                <input type="number" class="food-protein" step="0.1" min="0" value="${item.protein || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Fat (%):</label>
+                                <input type="number" class="food-fat" step="0.1" min="0" value="${item.fat || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Fiber (%):</label>
+                                <input type="number" class="food-fiber" step="0.1" min="0" value="${item.fiber || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Moisture (%):</label>
+                                <input type="number" class="food-moisture" step="0.1" min="0" value="${item.moisture || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Ash (%):</label>
+                                <input type="number" class="food-ash" step="0.1" min="0" value="${item.ash || ''}">
+                            </div>
+                        </div>
+                    `;
+                    foodItems.appendChild(foodItem);
+
+                    // Add event listeners to the loaded food item
+                    const inputs = foodItem.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        input.addEventListener('input', () => {
+                            updateFoodItemCalories(foodItem);
+                        });
+                    });
+
+                    // Add event listener to the select
+                    const select = foodItem.querySelector('select');
+                    select.addEventListener('change', () => {
+                        toggleFoodCalorieInput(select);
+                    });
+                });
+            }
+            
+            // Add event listeners to update progress when values change
+            document.querySelectorAll('.food-amount, .food-calories, .food-protein, .food-fat, .food-fiber, .food-moisture, .food-ash').forEach(input => {
+                input.addEventListener('input', () => {
+                    const foodItem = input.closest('.food-item');
+                    updateFoodItemCalories(foodItem);
+                });
+            });
+        }
+
+        function resetFoodItems() {
+            const catName = document.getElementById('trackerCatName').value;
+            if (!catName) return;
+            
+            if (confirm('Are you sure you want to reset all food items for ' + catName + '?')) {
+                // Clear the food items from the page
+                document.getElementById('foodItems').innerHTML = '';
+                
+                // Clear the food items from localStorage
+                const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+                if (profiles[catName]) {
+                    delete profiles[catName].foodItems;
+                    localStorage.setItem('catProfiles', JSON.stringify(profiles));
+                }
+                
+                // Update the progress bar
+                updateProgress();
+            }
+        }
     </script>
 </body>
 </html> 
