@@ -226,15 +226,14 @@
         </div>
 
         <div id="trackerContent" style="display: none;">
-            <div id="foodItems"></div>
-            <button class="add-food" onclick="addFoodItem()">+ Add Food Item</button>
-            
             <div class="progress-bar">
                 <div id="progressFill" class="progress-fill" style="width: 0%"></div>
             </div>
             <div class="progress-text">
                 <span id="caloriesConsumed">0</span> / <span id="dailyCalories">0</span> kcal (<span id="caloriePercentage">0</span>%)
             </div>
+            <button class="add-food" onclick="addFoodItem()" style="margin-bottom: 15px;">+ Add Food Item</button>
+            <div id="foodItems"></div>
         </div>
     </div>
 
@@ -651,7 +650,12 @@
                 </div>
             `;
             
-            foodItems.appendChild(foodItem);
+            // Insert the new food item at the beginning of the list
+            if (foodItems.firstChild) {
+                foodItems.insertBefore(foodItem, foodItems.firstChild);
+            } else {
+                foodItems.appendChild(foodItem);
+            }
 
             // Add event listeners to the new food item
             const inputs = foodItem.querySelectorAll('input');
