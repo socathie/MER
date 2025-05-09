@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Food Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cat Food Calculator</h1>
+    
+    <form id="catFoodForm">
+        <h2>Cat Information</h2>
+        <div class="form-group">
+            <label for="catName">Cat Name:</label>
+            <div style="display: flex; gap: 10px;">
+                <select id="catName" style="flex: 1;" required>
+                    <option value="">Select a cat or enter new name</option>
+                </select>
+                <input type="text" id="newCatName" placeholder="New cat name" style="flex: 1;">
+                <button type="button" onclick="addNewCat()" style="white-space: nowrap;">Add New Cat</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="weight">Weight (kg):</label>
+            <input type="number" id="weight" step="0.1" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="birthDate">Birth Date:</label>
+            <input type="date" id="birthDate" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="gender">Gender:</label>
+            <select id="gender" required>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="neutered">Neutered/Spayed:</label>
+            <select id="neutered" required>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </div>
+
+        <h2>Food Information</h2>
+        <div class="form-group">
+            <label>Calorie Input Method:</label>
+            <select id="calorieMethod" onchange="toggleCalorieInput()">
+                <option value="direct">Direct Calorie Input</option>
+                <option value="calculate">Calculate from Nutrients</option>
+            </select>
+        </div>
+
+        <div id="directCalories" class="form-group">
+            <label for="calories">Calories per 100g:</label>
+            <input type="number" id="calories" step="0.1">
+        </div>
+
+        <div id="nutrientCalories" class="form-group" style="display: none;">
+            <label for="protein">Protein (%):</label>
+            <input type="number" id="protein" step="0.1">
+            
+            <label for="fat">Fat (%):</label>
+            <input type="number" id="fat" step="0.1">
+            
+            <label for="fiber">Fiber (%):</label>
+            <input type="number" id="fiber" step="0.1">
+            
+            <label for="moisture">Moisture (%):</label>
+            <input type="number" id="moisture" step="0.1">
+            
+            <label for="ash">Ash (%):</label>
+            <input type="number" id="ash" step="0.1">
+        </div>
+
+        <button type="submit">Calculate</button>
+    </form>
+
+    <div id="result" class="result">
+        <h2>Results</h2>
+        <p>Resting Energy Requirement (RER): <span id="rer"></span> kcal/day</p>
+        <p>Maintenance Energy Requirement (MER): <span id="mer"></span> kcal/day</p>
+        <p>Recommended Food Amount: <span id="foodAmount"></span> g/day</p>
+        <p class="calories-display">Calories per 100g: <span id="caloriesPer100g"></span> kcal</p>
+    </div>
+
+    <script>
+        function loadCatProfiles(shouldClearFields = true) {
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            const profileSelect = document.getElementById('catName');
+            
+            // Clear existing options except the first one
+            while (profileSelect.options.length > 1) {
+                profileSelect.remove(1);
+            }
+
+            // Add saved profiles as options
+            Object.keys(profiles).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                profileSelect.appendChild(option);
+            });
+
+            // Only clear fields if explicitly requested
+            if (shouldClearFields) {
+                clearFields();
+            }
+        }
+
+        function clearFields() {
+            document.getElementById('weight').value = '';
+            document.getElementById('birthDate').value = '';
+            document.getElementById('gender').value = 'male';
+            document.getElementById('neutered').value = 'no';
+            document.getElementById('calories').value = '';
+            document.getElementById('protein').value = '';
+            document.getElementById('fat').value = '';
+            document.getElementById('fiber').value = '';
+            document.getElementById('moisture').value = '';
+            document.getElementById('ash').value = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        // Load saved cat profiles when page loads
+        window.addEventListener('load', function() {
+            loadCatProfiles(true); // Clear fields on initial load
+        });
+
+        function addNewCat() {
+            const newName = document.getElementById('newCatName').value.trim();
+            if (!newName) {
+                alert('Please enter a name for the new cat');
+                return;
+            }
+
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            if (profiles[newName]) {
+                alert('A cat with this name already exists');
+                return;
+            }
+
+            // Add new profile
+            profiles[newName] = {
+                weight: '',
+                birthDate: '',
+                gender: 'male',
+                neutered: 'no'
+            };
+
+            // Save and reload
+            localStorage.setItem('catProfiles', JSON.stringify(profiles));
+            loadCatProfiles(false); // Don't clear fields when adding new cat
+            
+            // Select the new cat
+            document.getElementById('catName').value = newName;
+            document.getElementById('newCatName').value = '';
+            
+            // Load the empty profile
+            loadProfile(newName);
+        }
+
+        function loadProfile(catName) {
+            if (!catName) {
+                clearFields();
+                return;
+            }
+            
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            const profile = profiles[catName];
+            
+            if (profile) {
+                document.getElementById('weight').value = profile.weight || '';
+                document.getElementById('birthDate').value = profile.birthDate || '';
+                document.getElementById('gender').value = profile.gender || 'male';
+                document.getElementById('neutered').value = profile.neutered || 'no';
+            }
+        }
+
+        function saveProfile(catName, profile) {
+            if (!catName) return;
+            
+            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
+            profiles[catName] = profile;
+            localStorage.setItem('catProfiles', JSON.stringify(profiles));
+        }
+
+        // Add event listener for profile selection
+        document.getElementById('catName').addEventListener('change', function(e) {
+            if (e.target.value) {
+                loadProfile(e.target.value);
+            } else {
+                clearFields();
+            }
+        });
+
+        // Add event listener for Enter key in new cat name input
+        document.getElementById('newCatName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewCat();
+            }
+        });
+
+        function calculateAge(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            
+            // Calculate months for more precise age
+            let months = monthDiff;
+            if (months < 0) {
+                months += 12;
+            }
+            
+            return age + (months / 12);
+        }
+
+        function toggleCalorieInput() {
+            const method = document.getElementById('calorieMethod').value;
+            document.getElementById('directCalories').style.display = method === 'direct' ? 'block' : 'none';
+            document.getElementById('nutrientCalories').style.display = method === 'calculate' ? 'block' : 'none';
+        }
+
+        function calculateCaloriesFromNutrients() {
+            const protein = parseFloat(document.getElementById('protein').value) || 0;
+            const fat = parseFloat(document.getElementById('fat').value) || 0;
+            const fiber = parseFloat(document.getElementById('fiber').value) || 0;
+            const moisture = parseFloat(document.getElementById('moisture').value) || 0;
+            const ash = parseFloat(document.getElementById('ash').value) || 0;
+
+            // Calculate carbohydrates by subtracting other components from 100%
+            const carbohydrates = 100 - (protein + fat + fiber + moisture + ash);
+
+            // Calculate calories using Atwater factors
+            // Protein: 3.5 kcal/g, Fat: 8.5 kcal/g, Carbohydrates: 3.5 kcal/g
+            const proteinCalories = (protein / 100) * 3.5 * 100;
+            const fatCalories = (fat / 100) * 8.5 * 100;
+            const carbCalories = (carbohydrates / 100) * 3.5 * 100;
+
+            return proteinCalories + fatCalories + carbCalories;
+        }
+
+        document.getElementById('catFoodForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get cat information
+            const catName = document.getElementById('catName').value;
+            const weight = document.getElementById('weight').value;
+            const birthDate = document.getElementById('birthDate').value;
+            const gender = document.getElementById('gender').value;
+            const neutered = document.getElementById('neutered').value;
+
+            // Save profile
+            saveProfile(catName, {
+                weight,
+                birthDate,
+                gender,
+                neutered
+            });
+
+            // Reload profiles to update the dropdown without clearing fields
+            loadCatProfiles(false);
+            // Select the current cat again
+            document.getElementById('catName').value = catName;
+            
+            const age = calculateAge(birthDate);
+            const isNeutered = neutered === 'yes';
+            
+            // Calculate RER (Resting Energy Requirement)
+            let rer = 70 * Math.pow(parseFloat(weight), 0.75);
+            
+            // Calculate MER (Maintenance Energy Requirement)
+            let mer;
+            if (age < 1/3) { // Under 4 months
+                // For very young kittens
+                mer = rer * 3.0;
+            } else if (age < 0.5) { // 4-6 months
+                // For older kittens
+                mer = rer * 2.5;
+            } else if (age < 1 && !isNeutered) { // 6-12 months, not neutered
+                // For adolescent cats
+                mer = rer * 2.0;
+            } else if (isNeutered) {
+                // For neutered adult cats
+                mer = rer * 1.2;
+            } else {
+                // For intact adult cats
+                mer = rer * 1.4;
+            }
+            
+            // Get calories per 100g
+            let caloriesPer100g;
+            if (document.getElementById('calorieMethod').value === 'direct') {
+                caloriesPer100g = parseFloat(document.getElementById('calories').value);
+            } else {
+                caloriesPer100g = calculateCaloriesFromNutrients();
+            }
+            
+            // Calculate food amount in grams
+            const foodAmount = (mer / caloriesPer100g) * 100;
+            
+            // Display results
+            document.getElementById('rer').textContent = Math.round(rer);
+            document.getElementById('mer').textContent = Math.round(mer);
+            document.getElementById('foodAmount').textContent = Math.round(foodAmount);
+            
+            // Add calories per 100g to results
+            const resultDiv = document.getElementById('result');
+            // Remove any existing calories display
+            const existingCalories = resultDiv.querySelector('.calories-display');
+            if (existingCalories) {
+                existingCalories.remove();
+            }
+            const caloriesDisplay = document.createElement('p');
+            caloriesDisplay.className = 'calories-display';
+            caloriesDisplay.textContent = `Calories per 100g: ${Math.round(caloriesPer100g)} kcal`;
+            resultDiv.appendChild(caloriesDisplay);
+            
+            resultDiv.style.display = 'block';
+        });
+    </script>
+</body>
+</html> 
