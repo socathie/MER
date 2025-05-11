@@ -606,6 +606,15 @@
             foodItem.innerHTML = `
                 <button class="remove-food" onclick="removeFoodItem(this)">×</button>
                 <div class="form-group">
+                    <label>Food Selection:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select class="food-select" onchange="loadSavedFood(this)" style="flex: 1;">
+                            <option value="">Select saved food or enter new</option>
+                        </select>
+                        <button type="button" onclick="saveNewFood(this)" style="white-space: nowrap;">Save as New Food</button>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>Food Name:</label>
                     <input type="text" class="food-name" placeholder="Enter food name">
                 </div>
@@ -616,11 +625,11 @@
                 <div class="form-group">
                     <label>Calorie Input Method:</label>
                     <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
-                        <option value="direct">Direct Calorie Input</option>
+                        <option value="direct" selected>Direct Calorie Input</option>
                         <option value="calculate">Calculate from Nutrients</option>
                     </select>
                 </div>
-                <div class="food-direct-calories">
+                <div class="food-direct-calories" style="display: block;">
                     <div class="form-group">
                         <label>Calories per 100g:</label>
                         <input type="number" class="food-calories" step="0.1" min="0">
@@ -657,6 +666,9 @@
                 foodItems.appendChild(foodItem);
             }
 
+            // Load saved foods into the select dropdown
+            loadSavedFoodsIntoSelect(foodItem.querySelector('.food-select'));
+
             // Add event listeners to the new food item
             const inputs = foodItem.querySelectorAll('input');
             inputs.forEach(input => {
@@ -666,13 +678,106 @@
             });
 
             // Add event listener to the select
-            const select = foodItem.querySelector('select');
+            const select = foodItem.querySelector('.food-calorie-method');
             select.addEventListener('change', () => {
                 toggleFoodCalorieInput(select);
             });
 
             saveFoodItems(catName);
             updateProgress();
+        }
+
+        function loadSavedFoodsIntoSelect(selectElement) {
+            const savedFoods = JSON.parse(localStorage.getItem('savedFoods') || '{}');
+            
+            // Clear existing options except the first one
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
+            }
+            
+            // Add saved foods as options
+            Object.keys(savedFoods).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                selectElement.appendChild(option);
+            });
+        }
+
+        function loadSavedFood(selectElement) {
+            const foodName = selectElement.value;
+            if (!foodName) return;
+            
+            const savedFoods = JSON.parse(localStorage.getItem('savedFoods') || '{}');
+            const food = savedFoods[foodName];
+            if (!food) return;
+            
+            const foodItem = selectElement.closest('.food-item');
+            const methodSelect = foodItem.querySelector('.food-calorie-method');
+            const directCalories = foodItem.querySelector('.food-direct-calories');
+            const nutrientCalories = foodItem.querySelector('.food-nutrient-calories');
+            
+            // Set the method first
+            methodSelect.value = food.method;
+            
+            // Update the display based on the method
+            if (food.method === 'direct') {
+                directCalories.style.display = 'block';
+                nutrientCalories.style.display = 'none';
+            } else {
+                directCalories.style.display = 'none';
+                nutrientCalories.style.display = 'block';
+            }
+            
+            // Set the values
+            foodItem.querySelector('.food-name').value = food.name;
+            foodItem.querySelector('.food-calories').value = food.calories;
+            
+            if (food.method === 'calculate') {
+                foodItem.querySelector('.food-protein').value = food.protein || '';
+                foodItem.querySelector('.food-fat').value = food.fat || '';
+                foodItem.querySelector('.food-fiber').value = food.fiber || '';
+                foodItem.querySelector('.food-moisture').value = food.moisture || '';
+                foodItem.querySelector('.food-ash').value = food.ash || '';
+            }
+            
+            updateFoodItemCalories(foodItem);
+        }
+
+        function saveNewFood(button) {
+            const foodItem = button.closest('.food-item');
+            const foodName = foodItem.querySelector('.food-name').value.trim();
+            
+            if (!foodName) {
+                alert('Please enter a food name');
+                return;
+            }
+            
+            const method = foodItem.querySelector('.food-calorie-method').value;
+            const foodData = {
+                name: foodName,
+                calories: foodItem.querySelector('.food-calories').value,
+                method: method
+            };
+            
+            if (method === 'calculate') {
+                foodData.protein = foodItem.querySelector('.food-protein').value;
+                foodData.fat = foodItem.querySelector('.food-fat').value;
+                foodData.fiber = foodItem.querySelector('.food-fiber').value;
+                foodData.moisture = foodItem.querySelector('.food-moisture').value;
+                foodData.ash = foodItem.querySelector('.food-ash').value;
+            }
+            
+            const savedFoods = JSON.parse(localStorage.getItem('savedFoods') || '{}');
+            savedFoods[foodName] = foodData;
+            localStorage.setItem('savedFoods', JSON.stringify(savedFoods));
+            
+            // Update all food select dropdowns
+            document.querySelectorAll('.food-select').forEach(select => {
+                loadSavedFoodsIntoSelect(select);
+            });
+            
+            alert('Food saved successfully!');
         }
 
         function toggleFoodCalorieInput(select) {
@@ -775,8 +880,18 @@
                 profile.foodItems.forEach(item => {
                     const foodItem = document.createElement('div');
                     foodItem.className = 'food-item';
+                    const isDirectMethod = item.method !== 'calculate';
                     foodItem.innerHTML = `
                         <button class="remove-food" onclick="removeFoodItem(this)">×</button>
+                        <div class="form-group">
+                            <label>Food Selection:</label>
+                            <div style="display: flex; gap: 10px;">
+                                <select class="food-select" onchange="loadSavedFood(this)" style="flex: 1;">
+                                    <option value="">Select saved food or enter new</option>
+                                </select>
+                                <button type="button" onclick="saveNewFood(this)" style="white-space: nowrap;">Save as New Food</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Food Name:</label>
                             <input type="text" class="food-name" placeholder="Enter food name" value="${item.name || ''}">
@@ -788,17 +903,17 @@
                         <div class="form-group">
                             <label>Calorie Input Method:</label>
                             <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
-                                <option value="direct" ${item.method === 'calculate' ? '' : 'selected'}>Direct Calorie Input</option>
-                                <option value="calculate" ${item.method === 'calculate' ? 'selected' : ''}>Calculate from Nutrients</option>
+                                <option value="direct" ${isDirectMethod ? 'selected' : ''}>Direct Calorie Input</option>
+                                <option value="calculate" ${!isDirectMethod ? 'selected' : ''}>Calculate from Nutrients</option>
                             </select>
                         </div>
-                        <div class="food-direct-calories" style="display: ${item.method === 'calculate' ? 'none' : 'block'}">
+                        <div class="food-direct-calories" style="display: ${isDirectMethod ? 'block' : 'none'}">
                             <div class="form-group">
                                 <label>Calories per 100g:</label>
                                 <input type="number" class="food-calories" step="0.1" min="0" value="${item.calories || ''}">
                             </div>
                         </div>
-                        <div class="food-nutrient-calories" style="display: ${item.method === 'calculate' ? 'block' : 'none'}">
+                        <div class="food-nutrient-calories" style="display: ${!isDirectMethod ? 'block' : 'none'}">
                             <div class="form-group">
                                 <label>Protein (%):</label>
                                 <input type="number" class="food-protein" step="0.1" min="0" value="${item.protein || ''}">
@@ -823,6 +938,9 @@
                     `;
                     foodItems.appendChild(foodItem);
 
+                    // Load saved foods into the select dropdown
+                    loadSavedFoodsIntoSelect(foodItem.querySelector('.food-select'));
+
                     // Add event listeners to the loaded food item
                     const inputs = foodItem.querySelectorAll('input');
                     inputs.forEach(input => {
@@ -832,7 +950,7 @@
                     });
 
                     // Add event listener to the select
-                    const select = foodItem.querySelector('select');
+                    const select = foodItem.querySelector('.food-calorie-method');
                     select.addEventListener('change', () => {
                         toggleFoodCalorieInput(select);
                     });
