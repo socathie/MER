@@ -172,6 +172,21 @@
 
             <h2>Food Information</h2>
             <div class="form-group">
+                <label>Food Selection:</label>
+                <div style="display: flex; gap: 10px;">
+                    <select id="foodSelect" onchange="loadSavedFoodToCalculator(this)" style="flex: 1;">
+                        <option value="">Select saved food or enter new</option>
+                    </select>
+                    <button type="button" onclick="saveNewFoodFromCalculator()" style="white-space: nowrap;">Save as New Food</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Food Name:</label>
+                <input type="text" id="foodName" placeholder="Enter food name">
+            </div>
+
+            <div class="form-group">
                 <label>Calorie Input Method:</label>
                 <select id="calorieMethod" onchange="toggleCalorieInput()">
                     <option value="direct">Direct Calorie Input</option>
@@ -278,6 +293,7 @@
         // Load saved cat profiles when page loads
         window.addEventListener('load', function() {
             loadCatProfiles(true); // Clear fields on initial load
+            loadSavedFoodsIntoCalculatorSelect(); // Load saved foods into calculator select
         });
 
         function addNewCat() {
@@ -380,23 +396,120 @@
             document.getElementById('nutrientCalories').style.display = method === 'calculate' ? 'block' : 'none';
         }
 
-        function calculateCaloriesFromNutrients() {
-            const protein = parseFloat(document.getElementById('protein').value) || 0;
-            const fat = parseFloat(document.getElementById('fat').value) || 0;
-            const fiber = parseFloat(document.getElementById('fiber').value) || 0;
-            const moisture = parseFloat(document.getElementById('moisture').value) || 0;
-            const ash = parseFloat(document.getElementById('ash').value) || 0;
-
+        function calculateCaloriesFromNutrients(protein, fat, fiber, moisture, ash) {
             // Calculate carbohydrates by subtracting other components from 100%
             const carbohydrates = 100 - (protein + fat + fiber + moisture + ash);
-
+            
             // Calculate calories using Atwater factors
-            // Protein: 3.5 kcal/g, Fat: 8.5 kcal/g, Carbohydrates: 3.5 kcal/g
             const proteinCalories = (protein / 100) * 3.5 * 100;
             const fatCalories = (fat / 100) * 8.5 * 100;
             const carbCalories = (carbohydrates / 100) * 3.5 * 100;
-
+            
             return proteinCalories + fatCalories + carbCalories;
+        }
+
+        function calculateRER(weight) {
+            return 70 * Math.pow(parseFloat(weight), 0.75);
+        }
+
+        function calculateMER(weight, birthDate, neutered) {
+            const age = calculateAge(birthDate);
+            const isNeutered = neutered === 'yes';
+            
+            // Calculate RER using shared function
+            const rer = calculateRER(weight);
+            
+            // Calculate MER (Maintenance Energy Requirement)
+            let mer;
+            if (age < 1/3) { // Under 4 months
+                mer = rer * 2.5;
+            } else if (age < 1) { // 4-12 months
+                mer = rer * 2.0;
+            } else if (isNeutered) {
+                mer = rer * 1.2;
+            } else {
+                mer = rer * 1.4;
+            }
+            
+            return Math.round(mer);
+        }
+
+        function createFoodItemHTML(item = {}) {
+            const isDirectMethod = item.method !== 'calculate';
+            return `
+                <button class="remove-food" onclick="removeFoodItem(this)">×</button>
+                <div class="form-group">
+                    <label>Food Selection:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select class="food-select" onchange="loadSavedFood(this)" style="flex: 1;">
+                            <option value="">Select saved food or enter new</option>
+                        </select>
+                        <button type="button" onclick="saveNewFood(this)" style="white-space: nowrap;">Save as New Food</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Food Name:</label>
+                    <input type="text" class="food-name" placeholder="Enter food name" value="${item.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Amount (g):</label>
+                    <input type="number" class="food-amount" step="0.1" min="0" value="${item.amount || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Calorie Input Method:</label>
+                    <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
+                        <option value="direct" ${isDirectMethod ? 'selected' : ''}>Direct Calorie Input</option>
+                        <option value="calculate" ${!isDirectMethod ? 'selected' : ''}>Calculate from Nutrients</option>
+                    </select>
+                </div>
+                <div class="food-direct-calories" style="display: ${isDirectMethod ? 'block' : 'none'}">
+                    <div class="form-group">
+                        <label>Calories per 100g:</label>
+                        <input type="number" class="food-calories" step="0.1" min="0" value="${item.calories || ''}">
+                    </div>
+                </div>
+                <div class="food-nutrient-calories" style="display: ${!isDirectMethod ? 'block' : 'none'}">
+                    <div class="form-group">
+                        <label>Protein (%):</label>
+                        <input type="number" class="food-protein" step="0.1" min="0" value="${item.protein || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Fat (%):</label>
+                        <input type="number" class="food-fat" step="0.1" min="0" value="${item.fat || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Fiber (%):</label>
+                        <input type="number" class="food-fiber" step="0.1" min="0" value="${item.fiber || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Moisture (%):</label>
+                        <input type="number" class="food-moisture" step="0.1" min="0" value="${item.moisture || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Ash (%):</label>
+                        <input type="number" class="food-ash" step="0.1" min="0" value="${item.ash || ''}">
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupFoodItemEventListeners(foodItem) {
+            // Add event listeners to inputs
+            const inputs = foodItem.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    updateFoodItemCalories(foodItem);
+                });
+            });
+
+            // Add event listener to the select
+            const select = foodItem.querySelector('.food-calorie-method');
+            select.addEventListener('change', () => {
+                toggleFoodCalorieInput(select);
+            });
+
+            // Load saved foods into the select dropdown
+            loadSavedFoodsIntoSelect(foodItem.querySelector('.food-select'));
         }
 
         document.getElementById('catFoodForm').addEventListener('submit', function(e) {
@@ -409,30 +522,9 @@
             const gender = document.getElementById('gender').value;
             const neutered = document.getElementById('neutered').value;
             
-            const age = calculateAge(birthDate);
-            const isNeutered = neutered === 'yes';
-            
-            // Calculate RER (Resting Energy Requirement)
-            let rer = 70 * Math.pow(parseFloat(weight), 0.75);
-            
-            // Calculate MER (Maintenance Energy Requirement)
-            let mer;
-            if (age < 1/3) { // Under 4 months
-                // For very young kittens
-                mer = rer * 3.0;
-            } else if (age < 0.5) { // 4-6 months
-                // For older kittens
-                mer = rer * 2.5;
-            } else if (age < 1 && !isNeutered) { // 6-12 months, not neutered
-                // For adolescent cats
-                mer = rer * 2.0;
-            } else if (isNeutered) {
-                // For neutered adult cats
-                mer = rer * 1.2;
-            } else {
-                // For intact adult cats
-                mer = rer * 1.4;
-            }
+            // Calculate MER and RER using shared functions
+            const mer = calculateMER(weight, birthDate, neutered);
+            const rer = calculateRER(weight);
 
             // Save profile without MER
             saveProfile(catName, {
@@ -452,7 +544,12 @@
             if (document.getElementById('calorieMethod').value === 'direct') {
                 caloriesPer100g = parseFloat(document.getElementById('calories').value);
             } else {
-                caloriesPer100g = calculateCaloriesFromNutrients();
+                const protein = parseFloat(document.getElementById('protein').value) || 0;
+                const fat = parseFloat(document.getElementById('fat').value) || 0;
+                const fiber = parseFloat(document.getElementById('fiber').value) || 0;
+                const moisture = parseFloat(document.getElementById('moisture').value) || 0;
+                const ash = parseFloat(document.getElementById('ash').value) || 0;
+                caloriesPer100g = calculateCaloriesFromNutrients(protein, fat, fiber, moisture, ash);
             }
             
             // Calculate food amount in grams
@@ -460,7 +557,7 @@
             
             // Display results
             document.getElementById('rer').textContent = Math.round(rer);
-            document.getElementById('mer').textContent = Math.round(mer);
+            document.getElementById('mer').textContent = mer;
             document.getElementById('foodAmount').textContent = Math.round(foodAmount);
             
             // Add calories per 100g to results
@@ -477,30 +574,6 @@
             
             resultDiv.style.display = 'block';
         });
-
-        function calculateMER(weight, birthDate, neutered) {
-            const age = calculateAge(birthDate);
-            const isNeutered = neutered === 'yes';
-            
-            // Calculate RER (Resting Energy Requirement)
-            let rer = 70 * Math.pow(parseFloat(weight), 0.75);
-            
-            // Calculate MER (Maintenance Energy Requirement)
-            let mer;
-            if (age < 1/3) { // Under 4 months
-                mer = rer * 3.0;
-            } else if (age < 0.5) { // 4-6 months
-                mer = rer * 2.5;
-            } else if (age < 1 && !isNeutered) { // 6-12 months, not neutered
-                mer = rer * 2.0;
-            } else if (isNeutered) {
-                mer = rer * 1.2;
-            } else {
-                mer = rer * 1.4;
-            }
-            
-            return Math.round(mer);
-        }
 
         function updateProgress() {
             const catName = document.getElementById('trackerCatName').value;
@@ -558,9 +631,11 @@
             // Activate selected tab
             document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
             
-            // Update tracker if switching to tracker tab
+            // Update appropriate lists based on tab
             if (tabName === 'tracker') {
                 updateTrackerCatList();
+            } else if (tabName === 'calculator') {
+                loadSavedFoodsIntoCalculatorSelect();
             }
         }
 
@@ -603,61 +678,7 @@
             const foodItems = document.getElementById('foodItems');
             const foodItem = document.createElement('div');
             foodItem.className = 'food-item';
-            foodItem.innerHTML = `
-                <button class="remove-food" onclick="removeFoodItem(this)">×</button>
-                <div class="form-group">
-                    <label>Food Selection:</label>
-                    <div style="display: flex; gap: 10px;">
-                        <select class="food-select" onchange="loadSavedFood(this)" style="flex: 1;">
-                            <option value="">Select saved food or enter new</option>
-                        </select>
-                        <button type="button" onclick="saveNewFood(this)" style="white-space: nowrap;">Save as New Food</button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Food Name:</label>
-                    <input type="text" class="food-name" placeholder="Enter food name">
-                </div>
-                <div class="form-group">
-                    <label>Amount (g):</label>
-                    <input type="number" class="food-amount" step="0.1" min="0">
-                </div>
-                <div class="form-group">
-                    <label>Calorie Input Method:</label>
-                    <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
-                        <option value="direct" selected>Direct Calorie Input</option>
-                        <option value="calculate">Calculate from Nutrients</option>
-                    </select>
-                </div>
-                <div class="food-direct-calories" style="display: block;">
-                    <div class="form-group">
-                        <label>Calories per 100g:</label>
-                        <input type="number" class="food-calories" step="0.1" min="0">
-                    </div>
-                </div>
-                <div class="food-nutrient-calories" style="display: none;">
-                    <div class="form-group">
-                        <label>Protein (%):</label>
-                        <input type="number" class="food-protein" step="0.1" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Fat (%):</label>
-                        <input type="number" class="food-fat" step="0.1" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Fiber (%):</label>
-                        <input type="number" class="food-fiber" step="0.1" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Moisture (%):</label>
-                        <input type="number" class="food-moisture" step="0.1" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Ash (%):</label>
-                        <input type="number" class="food-ash" step="0.1" min="0">
-                    </div>
-                </div>
-            `;
+            foodItem.innerHTML = createFoodItemHTML();
             
             // Insert the new food item at the beginning of the list
             if (foodItems.firstChild) {
@@ -666,23 +687,7 @@
                 foodItems.appendChild(foodItem);
             }
 
-            // Load saved foods into the select dropdown
-            loadSavedFoodsIntoSelect(foodItem.querySelector('.food-select'));
-
-            // Add event listeners to the new food item
-            const inputs = foodItem.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('input', () => {
-                    updateFoodItemCalories(foodItem);
-                });
-            });
-
-            // Add event listener to the select
-            const select = foodItem.querySelector('.food-calorie-method');
-            select.addEventListener('change', () => {
-                toggleFoodCalorieInput(select);
-            });
-
+            setupFoodItemEventListeners(foodItem);
             saveFoodItems(catName);
             updateProgress();
         }
@@ -809,16 +814,7 @@
                 const fiber = parseFloat(foodItem.querySelector('.food-fiber').value) || 0;
                 const moisture = parseFloat(foodItem.querySelector('.food-moisture').value) || 0;
                 const ash = parseFloat(foodItem.querySelector('.food-ash').value) || 0;
-                
-                // Calculate carbohydrates by subtracting other components from 100%
-                const carbohydrates = 100 - (protein + fat + fiber + moisture + ash);
-                
-                // Calculate calories using Atwater factors
-                const proteinCalories = (protein / 100) * 3.5 * 100;
-                const fatCalories = (fat / 100) * 8.5 * 100;
-                const carbCalories = (carbohydrates / 100) * 3.5 * 100;
-                
-                calories = proteinCalories + fatCalories + carbCalories;
+                calories = calculateCaloriesFromNutrients(protein, fat, fiber, moisture, ash);
             }
             
             // Update the hidden calories input
@@ -880,90 +876,11 @@
                 profile.foodItems.forEach(item => {
                     const foodItem = document.createElement('div');
                     foodItem.className = 'food-item';
-                    const isDirectMethod = item.method !== 'calculate';
-                    foodItem.innerHTML = `
-                        <button class="remove-food" onclick="removeFoodItem(this)">×</button>
-                        <div class="form-group">
-                            <label>Food Selection:</label>
-                            <div style="display: flex; gap: 10px;">
-                                <select class="food-select" onchange="loadSavedFood(this)" style="flex: 1;">
-                                    <option value="">Select saved food or enter new</option>
-                                </select>
-                                <button type="button" onclick="saveNewFood(this)" style="white-space: nowrap;">Save as New Food</button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Food Name:</label>
-                            <input type="text" class="food-name" placeholder="Enter food name" value="${item.name || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Amount (g):</label>
-                            <input type="number" class="food-amount" step="0.1" min="0" value="${item.amount || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Calorie Input Method:</label>
-                            <select class="food-calorie-method" onchange="toggleFoodCalorieInput(this)">
-                                <option value="direct" ${isDirectMethod ? 'selected' : ''}>Direct Calorie Input</option>
-                                <option value="calculate" ${!isDirectMethod ? 'selected' : ''}>Calculate from Nutrients</option>
-                            </select>
-                        </div>
-                        <div class="food-direct-calories" style="display: ${isDirectMethod ? 'block' : 'none'}">
-                            <div class="form-group">
-                                <label>Calories per 100g:</label>
-                                <input type="number" class="food-calories" step="0.1" min="0" value="${item.calories || ''}">
-                            </div>
-                        </div>
-                        <div class="food-nutrient-calories" style="display: ${!isDirectMethod ? 'block' : 'none'}">
-                            <div class="form-group">
-                                <label>Protein (%):</label>
-                                <input type="number" class="food-protein" step="0.1" min="0" value="${item.protein || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>Fat (%):</label>
-                                <input type="number" class="food-fat" step="0.1" min="0" value="${item.fat || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>Fiber (%):</label>
-                                <input type="number" class="food-fiber" step="0.1" min="0" value="${item.fiber || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>Moisture (%):</label>
-                                <input type="number" class="food-moisture" step="0.1" min="0" value="${item.moisture || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>Ash (%):</label>
-                                <input type="number" class="food-ash" step="0.1" min="0" value="${item.ash || ''}">
-                            </div>
-                        </div>
-                    `;
+                    foodItem.innerHTML = createFoodItemHTML(item);
                     foodItems.appendChild(foodItem);
-
-                    // Load saved foods into the select dropdown
-                    loadSavedFoodsIntoSelect(foodItem.querySelector('.food-select'));
-
-                    // Add event listeners to the loaded food item
-                    const inputs = foodItem.querySelectorAll('input');
-                    inputs.forEach(input => {
-                        input.addEventListener('input', () => {
-                            updateFoodItemCalories(foodItem);
-                        });
-                    });
-
-                    // Add event listener to the select
-                    const select = foodItem.querySelector('.food-calorie-method');
-                    select.addEventListener('change', () => {
-                        toggleFoodCalorieInput(select);
-                    });
+                    setupFoodItemEventListeners(foodItem);
                 });
             }
-            
-            // Add event listeners to update progress when values change
-            document.querySelectorAll('.food-amount, .food-calories, .food-protein, .food-fat, .food-fiber, .food-moisture, .food-ash').forEach(input => {
-                input.addEventListener('input', () => {
-                    const foodItem = input.closest('.food-item');
-                    updateFoodItemCalories(foodItem);
-                });
-            });
         }
 
         function resetFoodItems() {
@@ -984,6 +901,88 @@
                 // Update the progress bar
                 updateProgress();
             }
+        }
+
+        function loadSavedFoodsIntoCalculatorSelect() {
+            const savedFoods = JSON.parse(localStorage.getItem('savedFoods') || '{}');
+            const select = document.getElementById('foodSelect');
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add saved foods as options
+            Object.keys(savedFoods).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        }
+
+        function loadSavedFoodToCalculator(selectElement) {
+            const foodName = selectElement.value;
+            if (!foodName) return;
+            
+            const savedFoods = JSON.parse(localStorage.getItem('savedFoods') || '{}');
+            const food = savedFoods[foodName];
+            if (!food) return;
+            
+            // Set the method first
+            const methodSelect = document.getElementById('calorieMethod');
+            methodSelect.value = food.method;
+            
+            // Update the display based on the method
+            toggleCalorieInput();
+            
+            // Set the values
+            document.getElementById('foodName').value = food.name;
+            document.getElementById('calories').value = food.calories;
+            
+            if (food.method === 'calculate') {
+                document.getElementById('protein').value = food.protein || '';
+                document.getElementById('fat').value = food.fat || '';
+                document.getElementById('fiber').value = food.fiber || '';
+                document.getElementById('moisture').value = food.moisture || '';
+                document.getElementById('ash').value = food.ash || '';
+            }
+        }
+
+        function saveNewFoodFromCalculator() {
+            const foodName = document.getElementById('foodName').value.trim();
+            
+            if (!foodName) {
+                alert('Please enter a food name');
+                return;
+            }
+            
+            const method = document.getElementById('calorieMethod').value;
+            const foodData = {
+                name: foodName,
+                calories: document.getElementById('calories').value,
+                method: method
+            };
+            
+            if (method === 'calculate') {
+                foodData.protein = document.getElementById('protein').value;
+                foodData.fat = document.getElementById('fat').value;
+                foodData.fiber = document.getElementById('fiber').value;
+                foodData.moisture = document.getElementById('moisture').value;
+                foodData.ash = document.getElementById('ash').value;
+            }
+            
+            const savedFoods = JSON.parse(localStorage.getItem('savedFoods') || '{}');
+            savedFoods[foodName] = foodData;
+            localStorage.setItem('savedFoods', JSON.stringify(savedFoods));
+            
+            // Update all food select dropdowns
+            loadSavedFoodsIntoCalculatorSelect();
+            document.querySelectorAll('.food-select').forEach(select => {
+                loadSavedFoodsIntoSelect(select);
+            });
+            
+            alert('Food saved successfully!');
         }
     </script>
 </body>
