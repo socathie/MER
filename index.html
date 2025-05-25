@@ -348,9 +348,15 @@
 
         function saveProfile(catName, profile) {
             if (!catName) return;
-            
+
             const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
-            profiles[catName] = profile;
+
+            // Preserve any existing profile data
+            profiles[catName] = {
+                ...(profiles[catName] || {}),
+                ...profile
+            };
+
             localStorage.setItem('catProfiles', JSON.stringify(profiles));
         }
 
@@ -835,8 +841,8 @@
 
         function saveFoodItems(catName) {
             if (!catName) return;
-            
-            const foodItems = [];
+
+            const items = [];
             document.querySelectorAll('.food-item').forEach(item => {
                 const method = item.querySelector('.food-calorie-method').value;
                 const foodData = {
@@ -845,7 +851,7 @@
                     calories: item.querySelector('.food-calories').value,
                     method: method // Save the method to restore the correct view
                 };
-                
+
                 if (method === 'calculate') {
                     foodData.protein = item.querySelector('.food-protein').value;
                     foodData.fat = item.querySelector('.food-fat').value;
@@ -853,34 +859,30 @@
                     foodData.moisture = item.querySelector('.food-moisture').value;
                     foodData.ash = item.querySelector('.food-ash').value;
                 }
-                
-                foodItems.push(foodData);
+
+                items.push(foodData);
             });
-            
-            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
-            if (profiles[catName]) {
-                profiles[catName].foodItems = foodItems;
-                localStorage.setItem('catProfiles', JSON.stringify(profiles));
-            }
+
+            const catFoodItems = JSON.parse(localStorage.getItem('catFoodItems') || '{}');
+            catFoodItems[catName] = items;
+            localStorage.setItem('catFoodItems', JSON.stringify(catFoodItems));
         }
 
         function loadFoodItems(catName) {
             if (!catName) return;
-            
-            const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
-            const profile = profiles[catName];
+
+            const catFoodItems = JSON.parse(localStorage.getItem('catFoodItems') || '{}');
+            const items = catFoodItems[catName] || [];
             const foodItems = document.getElementById('foodItems');
             foodItems.innerHTML = '';
-            
-            if (profile && profile.foodItems) {
-                profile.foodItems.forEach(item => {
-                    const foodItem = document.createElement('div');
-                    foodItem.className = 'food-item';
-                    foodItem.innerHTML = createFoodItemHTML(item);
-                    foodItems.appendChild(foodItem);
-                    setupFoodItemEventListeners(foodItem);
-                });
-            }
+
+            items.forEach(item => {
+                const foodItem = document.createElement('div');
+                foodItem.className = 'food-item';
+                foodItem.innerHTML = createFoodItemHTML(item);
+                foodItems.appendChild(foodItem);
+                setupFoodItemEventListeners(foodItem);
+            });
         }
 
         function resetFoodItems() {
@@ -890,14 +892,14 @@
             if (confirm('Are you sure you want to reset all food items for ' + catName + '?')) {
                 // Clear the food items from the page
                 document.getElementById('foodItems').innerHTML = '';
-                
+
                 // Clear the food items from localStorage
-                const profiles = JSON.parse(localStorage.getItem('catProfiles') || '{}');
-                if (profiles[catName]) {
-                    delete profiles[catName].foodItems;
-                    localStorage.setItem('catProfiles', JSON.stringify(profiles));
+                const catFoodItems = JSON.parse(localStorage.getItem('catFoodItems') || '{}');
+                if (catFoodItems[catName]) {
+                    delete catFoodItems[catName];
+                    localStorage.setItem('catFoodItems', JSON.stringify(catFoodItems));
                 }
-                
+
                 // Update the progress bar
                 updateProgress();
             }
