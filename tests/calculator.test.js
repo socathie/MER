@@ -1,4 +1,26 @@
-const { calculateRER, calculateMER } = require('../calculator');
+const { calculateAge, calculateRER, calculateMER } = require('../calculator');
+
+describe('calculateAge', () => {
+    beforeAll(() => {
+        jest.useFakeTimers().setSystemTime(new Date('2024-01-15'));
+    });
+
+    afterAll(() => {
+        jest.useRealTimers();
+    });
+
+    test('returns zero when birthday is today', () => {
+        expect(calculateAge('2024-01-15')).toBeCloseTo(0);
+    });
+
+    test('handles birthday later in the same month', () => {
+        expect(calculateAge('2023-01-31')).toBeCloseTo(11 / 12);
+    });
+
+    test('calculates years and months correctly', () => {
+        expect(calculateAge('2022-06-15')).toBeCloseTo(1 + 7 / 12);
+    });
+});
 
 describe('calculateRER', () => {
   test('calculates RER for 5kg', () => {

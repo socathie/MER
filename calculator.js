@@ -1,19 +1,19 @@
 function calculateAge(birthDate) {
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
 
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
+    if (today.getDate() < birth.getDate()) {
+        months -= 1;
+    }
 
-  let months = monthDiff;
-  if (months < 0) {
-    months += 12;
-  }
+    if (months < 0) {
+        months += 12;
+        years -= 1;
+    }
 
-  return age + months / 12;
+    return years + months / 12;
 }
 
 function calculateRER(weight) {
