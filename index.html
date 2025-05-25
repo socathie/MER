@@ -121,6 +121,7 @@
             font-weight: bold;
         }
     </style>
+    <script src="calculator.js"></script>
 </head>
 <body>
     <h1>Cat Food Calculator</h1>
@@ -371,24 +372,6 @@
             }
         });
 
-        function calculateAge(birthDate) {
-            const today = new Date();
-            const birth = new Date(birthDate);
-            let age = today.getFullYear() - birth.getFullYear();
-            const monthDiff = today.getMonth() - birth.getMonth();
-            
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-                age--;
-            }
-            
-            // Calculate months for more precise age
-            let months = monthDiff;
-            if (months < 0) {
-                months += 12;
-            }
-            
-            return age + (months / 12);
-        }
 
         function toggleCalorieInput() {
             const method = document.getElementById('calorieMethod').value;
@@ -408,31 +391,6 @@
             return proteinCalories + fatCalories + carbCalories;
         }
 
-        function calculateRER(weight) {
-            return 70 * Math.pow(parseFloat(weight), 0.75);
-        }
-
-        function calculateMER(weight, birthDate, neutered) {
-            const age = calculateAge(birthDate);
-            const isNeutered = neutered === 'yes';
-            
-            // Calculate RER using shared function
-            const rer = calculateRER(weight);
-            
-            // Calculate MER (Maintenance Energy Requirement)
-            let mer;
-            if (age < 1/3) { // Under 4 months
-                mer = rer * 2.5;
-            } else if (age < 1) { // 4-12 months
-                mer = rer * 2.0;
-            } else if (isNeutered) {
-                mer = rer * 1.2;
-            } else {
-                mer = rer * 1.4;
-            }
-            
-            return Math.round(mer);
-        }
 
         function createFoodItemHTML(item = {}) {
             const isDirectMethod = item.method !== 'calculate';
