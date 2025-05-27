@@ -1,0 +1,16 @@
+{
+    "expo": {
+        "name": "CatFoodCalculator",
+        "slug": "cat-food-calculator",
+        "version": "1.0.0",
+        "platforms": ["ios", "android"],
+        "jsEngine": "hermes",
+        "android": {
+            "package": "com.example.catfoodcalculator",
+            "allowBackup": true
+        },
+        "ios": {
+            "bundleIdentifier": "com.example.catfoodcalculator"
+        }
+    }
+}
