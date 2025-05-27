@@ -310,23 +310,34 @@
                 return;
             }
 
-            // Add new profile
+            // Gather cat information and validate required fields
+            const weight = document.getElementById('weight').value;
+            const birthDate = document.getElementById('birthDate').value;
+            const gender = document.getElementById('gender').value;
+            const neutered = document.getElementById('neutered').value;
+
+            if (!weight || !birthDate || !gender || !neutered) {
+                alert('Please fill in all cat information before adding');
+                return;
+            }
+
+            // Add new profile with provided values
             profiles[newName] = {
-                weight: '',
-                birthDate: '',
-                gender: 'male',
-                neutered: 'no'
+                weight,
+                birthDate,
+                gender,
+                neutered
             };
 
             // Save and reload
             localStorage.setItem('catProfiles', JSON.stringify(profiles));
             loadCatProfiles(false); // Don't clear fields when adding new cat
-            
+
             // Select the new cat
             document.getElementById('catName').value = newName;
             document.getElementById('newCatName').value = '';
-            
-            // Load the empty profile
+
+            // Load the saved profile
             loadProfile(newName);
         }
 
