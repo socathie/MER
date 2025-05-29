@@ -2,11 +2,17 @@
   "name": "mer",
   "version": "1.0.0",
   "description": "",
-  "main": "calculator.js",
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "start": "expo start"
   },
   "devDependencies": {
     "jest": "^29.6.1"
+  },
+  "dependencies": {
+    "expo": "^53.0.0",
+    "react": "18.2.0",
+    "react-native": "0.73.0"
   }
 }
