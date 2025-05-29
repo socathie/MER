@@ -19,7 +19,7 @@ export default function App() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar style="auto" />
+            <StatusBar style="dark" />
             <Text style={styles.title}>Cat Food Calculator</Text>
             <TextInput
                 style={styles.input}
@@ -54,10 +54,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,
+        backgroundColor: '#fff',
     },
     title: {
         fontSize: 24,
         marginBottom: 16,
+        color: '#000',
     },
     input: {
         width: '100%',
@@ -65,10 +67,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         padding: 8,
         marginBottom: 12,
+        backgroundColor: '#fff',
+        color: '#000',
     },
     result: {
         marginTop: 16,
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#000',
     },
 });
