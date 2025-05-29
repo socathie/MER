@@ -1,12 +1,21 @@
 {
-  "name": "mer",
-  "version": "1.0.0",
-  "description": "",
-  "main": "calculator.js",
-  "scripts": {
-    "test": "jest"
-  },
-  "devDependencies": {
-    "jest": "^29.6.1"
-  }
+    "name": "mer",
+    "version": "1.0.0",
+    "description": "Cat food calculator expo app",
+    "main": "node_modules/expo/AppEntry.js",
+    "scripts": {
+        "test": "jest"
+    },
+    "dependencies": {
+        "expo": "^53.0.0",
+        "react": "18.2.0",
+        "react-native": "0.72.0",
+        "@react-navigation/native": "^6.2.5",
+        "@react-navigation/material-top-tabs": "^6.5.8",
+        "@react-native-async-storage/async-storage": "^1.21.0",
+        "@react-native-picker/picker": "^2.4.10"
+    },
+    "devDependencies": {
+        "jest": "^29.6.1"
+    }
 }
